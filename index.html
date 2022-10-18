@@ -62,10 +62,11 @@
         canvas = document.querySelector('#c');
 
         scene = new THREE.Scene();
-        renderer = new THREE.WebGLRenderer({
+        renderer = new THREE.WebGL1Renderer({
             canvas: canvas,
             antialias: true
         });
+        //console.log("isWebGL2? " + renderer.capabilities.isWebGL2);
         renderer.shadowMap.enabled = true;
         //canvas = renderer.domElement;
         //document.body.appendChild(canvas);
