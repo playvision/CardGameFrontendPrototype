@@ -24,17 +24,35 @@
         bottom: 0;
     }
 
-    #flipAllBtn {
+    .testBtn {
         position: absolute;
         left: 5pt;
         top: 5pt;
         display: block;
     }
+
+    #options {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        display: block;
+        padding: 5pt;
+        background: #fff;
+    }
 </style>
 
 <canvas id="c" onclick=""></canvas>
 
-<button id="flipAllBtn">Flip All</button>
+<!--<button id="flipAllBtn" class="testBtn">Flip All</button>-->
+<button id="testBtn" class="testBtn">Test</button>
+
+<div id="options">
+    <p><input type="checkbox" id="option_gl1" name="option_gl1" /> <label for="option_gl1">Force WebGL 1</label></p>
+    <p><input type="checkbox" id="option_pot" name="option_pot" /> <label for="option_pot"><s>(TODO) Use POT textures</s></label></p>
+    <p><button id="startBtn">Start</button></p>
+</div>
 
 <script src="https://threejs.org/build/three.min.js"></script>
 <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
@@ -47,26 +65,43 @@
     var controls, raycaster, mouse, txtLoader, clock, delta = 0;
     var cardMesh;
     var /*card,*/ ground;
+    
     // animation clips
-    var flipUpsideClip, flipDownsideClip;
+    var flipUpsideClip, flipDownsideClip, addToHandClip;
 
     var cards = [];
+    var cardObjs = [];
+
+    var cameraAttachment;
+    var handContainer;
 
     const colorDark = new THREE.Color(0xb0b0b0);
     const colorLight = new THREE.Color(0xffffff);
     const animationDuration = 1;
 
-    init();
+    start();
+    document.querySelector('#startBtn').addEventListener('click', start, false);
 
-    function init() {
+    function start() {
+        document.querySelector('#options').style.display = 'none';
+        init({
+            forceWebGL1: document.querySelector('#option_gl1').checked,
+            usePOTTextures: document.querySelector('#option_pot').checked,
+        });
+    }
+
+    function init(flags) {
         canvas = document.querySelector('#c');
 
         scene = new THREE.Scene();
-        renderer = new THREE.WebGL1Renderer({
+
+        const rendererClass = flags.forceWebGL1 ? THREE.WebGL1Renderer : THREE.WebGLRenderer;
+        renderer = new rendererClass({
             canvas: canvas,
             antialias: true
         });
-        //console.log("isWebGL2? " + renderer.capabilities.isWebGL2);
+
+        console.log("isWebGL2? " + renderer.capabilities.isWebGL2);
         renderer.shadowMap.enabled = true;
         //canvas = renderer.domElement;
         //document.body.appendChild(canvas);
@@ -91,6 +126,7 @@
         // animation clips
         flipUpsideClip = createFlipUpsideClip('faceup');
         flipDownsideClip = createFlipUpsideClip('facedown');
+        addToHandClip = createAddToHandClip();
 
         // Cards
         for (var x = -3; x <= 3; x++) {
@@ -101,15 +137,50 @@
                 scene.add(group);
                 group.position.set(1.4 * x, 0, 2.1 * z);
                 cards.push(card);
+                cardObjs.push(group);
             }
         }
+
+        // Camera attachment (container for camera-aligned objects)
+        cameraAttachment = new THREE.Group();
+        scene.add(cameraAttachment);
+        updateCameraAttachment();
+
+        // Hand container
+        handContainer = new THREE.Group();
+        cameraAttachment.add(handContainer);
+        handContainer.position.set(0, -1.5, -4);
+
+        /*addCardToHand(cardObjs[0], handContainer);
+        addCardToHand(cardObjs[1], handContainer);
+        addCardToHand(cardObjs[2], handContainer);
+        addCardToHand(cardObjs[3], handContainer);
+        addCardToHand(cardObjs[4], handContainer);
+        addCardToHand(cardObjs[5], handContainer);*/
 
         // Ground
         initGround();
 
         render();
 
-        document.querySelector('#flipAllBtn').onclick = flipAllCards;
+        //document.querySelector('#flipAllBtn').onclick = flipAllCards;
+        document.querySelector('#testBtn').onclick = addCard;
+    }
+
+    function addCardToHand(cardObj, handContainer) {
+        handContainer.attach(cardObj);
+        var card = cardObj.children[0];
+        card.actions.addToHand.play();
+    }
+
+    var testCount = 0;
+    function addCard() {
+        addCardToHand(cardObjs[testCount++], handContainer);
+    }
+
+    function updateCameraAttachment() {
+        cameraAttachment.position.copy(camera.position);
+        cameraAttachment.rotation.copy(camera.rotation);
     }
 
     function render() {
@@ -121,6 +192,52 @@
         delta = clock.getDelta();
         for (var i = 0; i < cards.length; i++) {
             cards[i].mixer.update(delta);
+        }
+
+        updateCameraAttachment();
+
+        var cardsInHandCount = handContainer.children.length;
+        if (cardsInHandCount > 0) {
+            var fanRadius = 5.0;
+            var angleStep = -10;
+
+            var aspectRatioLimit = 1.2;
+
+            var maxFanSpreadAngle = 45;
+            if (camera.aspect < aspectRatioLimit) {
+                maxFanSpreadAngle *= camera.aspect / aspectRatioLimit;
+            }
+            var fanSpreadMul = maxFanSpreadAngle / (cardsInHandCount * Math.abs(angleStep));
+            if (fanSpreadMul < 1) {
+                angleStep *= fanSpreadMul;
+            }
+
+            var angleOffset = -0.5 * angleStep * (cardsInHandCount - 1);
+            angleStep *= Math.PI / 180;
+            angleOffset *= Math.PI / 180;
+            var angleOffset2 = Math.PI / 2;
+            for (var i = 0; i < cardsInHandCount; i++) {
+                var cardObj = handContainer.children[i];
+
+                var angle = angleOffset + i * angleStep;
+                var depth = i * 0.02;
+                var targetPos = new THREE.Vector3(
+                    fanRadius * Math.cos(angleOffset2 + angle),
+                    fanRadius * (Math.sin(angleOffset2 + angle) - 1),
+                    depth
+                );
+                var targetEuler = new THREE.Euler(
+                    Math.PI / 2,
+                    Math.PI + angle,
+                    0
+                );
+                var targetRot = new THREE.Quaternion();
+                targetRot.setFromEuler(targetEuler);
+
+                var t = 8.0 * delta;
+                cardObj.position.lerp(targetPos, t);
+                cardObj.quaternion.slerp(targetRot, t);
+            }
         }
 
         renderer.render(scene, camera);
@@ -177,12 +294,16 @@
 
         card.actions = {
             flipUpside: card.mixer.clipAction(flipUpsideClip),
-            flipDownside: card.mixer.clipAction(flipDownsideClip)
+            flipDownside: card.mixer.clipAction(flipDownsideClip),
+            addToHand: card.mixer.clipAction(addToHandClip),
         };
         card.actions.flipUpside.loop = THREE.LoopOnce;
         card.actions.flipDownside.loop = THREE.LoopOnce;
         card.actions.flipUpside.clampWhenFinished = true;
         card.actions.flipDownside.clampWhenFinished = true;
+
+        card.actions.addToHand.loop = THREE.LoopOnce;
+        card.actions.addToHand.clampWhenFinished = true;
 
         return card;
     }
@@ -265,6 +386,32 @@
         return flipUpsideClip;
     }
 
+    function createAddToHandClip() {
+        var posArrFlat = [
+            0, 0, 0,
+            0, 0, 2.5,
+            0, 0, 0
+        ];
+
+        var timesArr = [];
+        var len = posArrFlat.length - 3;
+        for (var j = 0; j < posArrFlat.length / 3; j++) {
+            var x = ((animationDuration / len) * j * 3) + 0; // + delay
+            timesArr.push(x);
+        }
+
+        var positionKF = new THREE.VectorKeyframeTrack(
+            '.position',
+            timesArr,
+            posArrFlat,
+            THREE.InterpolateSmooth
+        );
+
+        var clip = new THREE.AnimationClip('AddToHand', animationDuration, [positionKF]);
+
+        return clip;
+    }
+
     function onMouseMove(evt) {
         
         /*if (raycast(card) == true) {
@@ -279,7 +426,7 @@
     function onMouseClick(evt) {
         var card = raycastCards();
         if (card) {
-            flipCard(card);
+            //flipCard(card);
         }
     }
 
