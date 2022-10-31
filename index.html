@@ -26,7 +26,7 @@
 
     .testBtn {
         position: absolute;
-        left: 5pt;
+        right: 5pt;
         top: 5pt;
         display: block;
     }
@@ -55,10 +55,14 @@
 </div>
 
 <script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script src="Stats.js"></script>
 
 <script>
-    // This example uses THREE.CatmullRomCurve3 to create a path for a custom Keyframe Track position animation. // helper
+    const gltfLoader = new THREE.GLTFLoader();
+
+    var stats;
 
     // Global Variables
     var canvas, scene, renderer, camera;
@@ -79,18 +83,74 @@
     const colorLight = new THREE.Color(0xffffff);
     const animationDuration = 1;
 
+    const forward = new THREE.Vector3(0, 0, -1);
+    const up = new THREE.Vector3(0, 1, 0);
+
+    const tablePlane = new THREE.Plane(up, 0);
+
     start();
     document.querySelector('#startBtn').addEventListener('click', start, false);
 
     function start() {
         document.querySelector('#options').style.display = 'none';
-        init({
-            forceWebGL1: document.querySelector('#option_gl1').checked,
-            usePOTTextures: document.querySelector('#option_pot').checked,
-        });
+        gltfLoader.load(
+            'card.glb',
+            function (gltf) {
+                // gltf.scene.traverse(function (child) {
+                //     if ((child as THREE.Mesh).isMesh) {
+                //         const m = (child as THREE.Mesh)
+                //         m.receiveShadow = true
+                //         m.castShadow = true
+                //     }
+                //     if (((child as THREE.Light)).isLight) {
+                //         const l = (child as THREE.Light)
+                //         l.castShadow = true
+                //         l.shadow.bias = -.003
+                //         l.shadow.mapSize.width = 2048
+                //         l.shadow.mapSize.height = 2048
+                //     }
+                // })
+                //scene.add(gltf.scene)
+                
+                /*var cardBody = gltf.scene;
+                cardBody.name = "CardBody";
+                cardBody.scale.set(0.004, 0.004, 0.004);
+                cardBody.rotation.set(90 * Math.PI / 180, 0, 0);
+
+                cardMesh = new THREE.Group();
+                cardMesh.name = "Card";
+                cardMesh.add(cardBody);*/
+
+                var cardBody = gltf.scene.children[0];
+                cardBody.name = "CardBody";
+                cardBody.scale.set(0.004, 0.004, 0.004);
+                cardBody.rotation.set(0, 0, 0);
+
+                cardMesh = gltf.scene;
+                cardMesh.name = "Card";
+
+                /*cardMesh = gltf.scene;
+                cardMesh.scale.set(0.004, 0.004, 0.004);*/
+
+                init({
+                    forceWebGL1: document.querySelector('#option_gl1').checked,
+                    usePOTTextures: document.querySelector('#option_pot').checked,
+                });
+            },
+            (xhr) => {
+                console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+            },
+            (error) => {
+                console.log(error)
+            }
+        );
     }
 
     function init(flags) {
+        stats = new Stats();
+        stats.showPanel( 0 );
+        document.body.appendChild( stats.dom );
+
         canvas = document.querySelector('#c');
 
         scene = new THREE.Scene();
@@ -102,16 +162,22 @@
         });
 
         console.log("isWebGL2? " + renderer.capabilities.isWebGL2);
-        renderer.shadowMap.enabled = true;
+        //renderer.shadowMap.enabled = true;
         //canvas = renderer.domElement;
         //document.body.appendChild(canvas);
 
         camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
-        camera.position.set(0, 4, -1.5);
-        controls = new THREE.OrbitControls(camera, canvas);
+        camera.position.set(0, 7, 4);
+        camera.rotation.set(-60 * Math.PI / 180, 0, 0);
+        //controls = new THREE.OrbitControls(camera, canvas);
 
         canvas.addEventListener('mousemove', onMouseMove, false);
         canvas.addEventListener('click', onMouseClick, false);
+        canvas.addEventListener('mousedown', onMouseDown, false);
+        canvas.addEventListener('mouseup', onMouseUp, false);
+        canvas.addEventListener('touchstart', onTouchStart, false);
+        canvas.addEventListener('touchend', onTouchEnd, false);
+        canvas.addEventListener('touchmove', onTouchMove, false);
 
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
@@ -121,7 +187,7 @@
         // Lights
         initLights();
 
-        cardMesh = createCardMesh();
+        //cardMesh = createCardMesh();
 
         // animation clips
         flipUpsideClip = createFlipUpsideClip('faceup');
@@ -173,6 +239,10 @@
         card.actions.addToHand.play();
     }
 
+    function cardIsInHand(cardObj, handContainer) {
+        return cardObj.parent == handContainer;
+    }
+
     var testCount = 0;
     function addCard() {
         addCardToHand(cardObjs[testCount++], handContainer);
@@ -184,6 +254,8 @@
     }
 
     function render() {
+        stats.begin();
+
         if (resize(renderer)) {
             camera.aspect = canvas.clientWidth / canvas.clientHeight;
             camera.updateProjectionMatrix();
@@ -198,14 +270,26 @@
 
         var cardsInHandCount = handContainer.children.length;
         if (cardsInHandCount > 0) {
+            var aspectRatioLimitForPositionAdjustment = 1.0;
+            var aspectRatioLimitForSpreadAngleAdjustment = 1.4;
+
+            var additionalFanOffset = new THREE.Vector3(0, 0, 0);
+            var additionalFanOffsetFactor = 0;
+            var maxAdditionalFanOffsetFactor = 0.8;
+            if (camera.aspect < aspectRatioLimitForPositionAdjustment) {
+                additionalFanOffsetFactor = aspectRatioLimitForPositionAdjustment / camera.aspect - 1;
+                if (additionalFanOffsetFactor > maxAdditionalFanOffsetFactor) {
+                    additionalFanOffsetFactor = maxAdditionalFanOffsetFactor;
+                }
+                additionalFanOffset.set(0, -1.0 * additionalFanOffsetFactor, -1.0 * additionalFanOffsetFactor);
+            }
+
             var fanRadius = 5.0;
             var angleStep = -10;
 
-            var aspectRatioLimit = 1.2;
-
             var maxFanSpreadAngle = 45;
-            if (camera.aspect < aspectRatioLimit) {
-                maxFanSpreadAngle *= camera.aspect / aspectRatioLimit;
+            if (camera.aspect < aspectRatioLimitForSpreadAngleAdjustment) {
+                maxFanSpreadAngle *= camera.aspect / aspectRatioLimitForSpreadAngleAdjustment;
             }
             var fanSpreadMul = maxFanSpreadAngle / (cardsInHandCount * Math.abs(angleStep));
             if (fanSpreadMul < 1) {
@@ -226,6 +310,7 @@
                     fanRadius * (Math.sin(angleOffset2 + angle) - 1),
                     depth
                 );
+                targetPos.add(additionalFanOffset);
                 var targetEuler = new THREE.Euler(
                     Math.PI / 2,
                     Math.PI + angle,
@@ -234,21 +319,88 @@
                 var targetRot = new THREE.Quaternion();
                 targetRot.setFromEuler(targetEuler);
 
-                var t = 8.0 * delta;
-                cardObj.position.lerp(targetPos, t);
-                cardObj.quaternion.slerp(targetRot, t);
+                if (cardObj == draggedCardObj) {
+                    var verticalScreenRangeForLayingCardMin = 0.2 - 0.4 * additionalFanOffsetFactor;
+                    var verticalScreenRangeForLayingCardMax = 0.4 - 0.2 * additionalFanOffsetFactor;
+                    var fanPlaneToTablePlaneBlendFactor = remapValueInRange(mouse.y, verticalScreenRangeForLayingCardMin, verticalScreenRangeForLayingCardMax, 0, 1);
+                    fanPlaneToTablePlaneBlendFactor = clamp(fanPlaneToTablePlaneBlendFactor, 0, 1);
+
+                    var handContainerInvMatrix = handContainer.matrixWorld.clone();
+                    handContainerInvMatrix.invert();
+
+                    // World space ray
+                    var pointerRay = raycaster.ray.clone();
+
+                    var targetPositionInTablePlane = new THREE.Vector3();
+                    pointerRay.intersectPlane(tablePlane, targetPositionInTablePlane);
+                    targetPositionInTablePlane.y = 0.2; // height above table
+                    targetPositionInTablePlane.applyMatrix4(handContainerInvMatrix);
+
+                    // Convert pointerRay to hand container space
+                    pointerRay.applyMatrix4(handContainerInvMatrix);
+
+                    var cardDragPlane = new THREE.Plane(forward, targetPos.z);
+                    var targetPositionInFanPlane = new THREE.Vector3();
+                    pointerRay.intersectPlane(cardDragPlane, targetPositionInFanPlane);
+
+                    // Blend between targetPositionInFanPlane & targetPositionInTablePlane
+                    targetPos = targetPositionInFanPlane.clone();
+                    targetPos.lerp(targetPositionInTablePlane, fanPlaneToTablePlaneBlendFactor);
+
+                    var straightCardEuler = new THREE.Euler(
+                        Math.PI / 2,
+                        Math.PI,
+                        0
+                    );
+                    var straightCardRot = new THREE.Quaternion();
+                    straightCardRot.setFromEuler(straightCardEuler);
+
+                    var handContainerRotationInvMatrix = new THREE.Matrix4();
+                    handContainerRotationInvMatrix.extractRotation(handContainerInvMatrix);
+                    
+                    var tableForwardInFanSpace = forward.clone();
+                    tableForwardInFanSpace.applyMatrix4(handContainerRotationInvMatrix);
+
+                    var hoveringCardRotation = new THREE.Quaternion();
+                    hoveringCardRotation.setFromUnitVectors(up, tableForwardInFanSpace);
+                    //targetRot.premultiply(hoveringCardRotation);
+                    hoveringCardRotation.multiply(straightCardRot);
+
+                    targetRot.slerp(hoveringCardRotation, fanPlaneToTablePlaneBlendFactor);
+
+                    var lerpFactor = 16.0 * delta;
+                    if (fanPlaneToTablePlaneBlendFactor > 0) {
+                        lerpFactor = 1;
+                    }
+                    
+                    cardObj.position.lerp(targetPos, lerpFactor);
+                    cardObj.position.setZ(targetPos.z);
+                    //cardObj.quaternion.slerp(targetRot, lerpFactor);
+                    cardObj.quaternion.copy(targetRot);
+                }
+                else
+                {
+                    var lerpFactor = 8.0 * delta;
+
+                    cardObj.position.lerp(targetPos, lerpFactor);
+                    cardObj.quaternion.slerp(targetRot, lerpFactor);
+                }
             }
         }
 
         renderer.render(scene, camera);
+
+        stats.end();
+
         requestAnimationFrame(render);
     }
 
     function initLights() {
         var ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
         var dirLight = new THREE.DirectionalLight(0xcceeff, 0.9);
-        dirLight.castShadow = true;
+        //dirLight.castShadow = true;
         dirLight.position.setScalar(5);
+        dirLight.rotation.set(-45 * Math.PI / 180, 0 * Math.PI / 180);
         scene.add(dirLight, ambientLight);
     }
 
@@ -279,7 +431,7 @@
             ]
         );
         cardMesh.scale.x = 0.65;
-        cardMesh.castShadow = true;
+        //cardMesh.castShadow = true;
         return cardMesh;
     }
 
@@ -319,7 +471,7 @@
         );
         ground.geometry.rotateX(-Math.PI * 0.5);
         ground.position.set(0, -0.1, 0);
-        ground.receiveShadow = true;
+        //ground.receiveShadow = true;
         scene.add(ground);
     }
 
@@ -412,8 +564,20 @@
         return clip;
     }
 
+    function absorbEvent(event) {
+      var e = event || window.event;
+      e.preventDefault && e.preventDefault();
+      e.stopPropagation && e.stopPropagation();
+      e.cancelBubble = true;
+      e.returnValue = false;
+      return false;
+    }
+
     function onMouseMove(evt) {
-        
+        if (cardDragTouchId === 0) {
+            updateRaycaster();
+        }
+
         /*if (raycast(card) == true) {
             card.material[2].color.set(colorLight);
             card.material[3].color.set(colorLight);
@@ -421,13 +585,106 @@
             card.material[2].color.set(colorDark);
             card.material[3].color.set(colorDark);
         }*/
+
+        return absorbEvent(evt);
     }
 
     function onMouseClick(evt) {
-        var card = raycastCards();
-        if (card) {
+        //updateRaycaster();
+
+        /*var cardObj = raycastCards();
+        if (cardObj) {
             //flipCard(card);
+        }*/
+
+        return absorbEvent(evt);
+    }
+
+    var draggedCardObj = null;
+    var cardDragTouchId = null;
+
+    function onMouseDown(evt) {
+        console.log('down fired');
+        console.log(evt);
+
+        updateRaycaster();
+
+        draggedCardObj = null;
+        cardDragTouchId = null;
+        var cardObj = raycastCards();
+        if (cardObj) {
+            if (cardIsInHand(cardObj, handContainer)) {
+                draggedCardObj = cardObj;
+                
+                /*var card = cardObj.children[0];
+                flipCard(card);*/
+            }
+            
         }
+
+        return absorbEvent(evt);
+    }
+
+    function onMouseUp(evt) {
+        console.log('up fired');
+        console.log(evt);
+        draggedCardObj = null;
+        cardDragTouchId = null;
+
+        return absorbEvent(evt);
+    }
+
+    function onTouchStart(evt) {
+        console.log('touch start');
+        console.log(evt);
+
+        if (cardDragTouchId === null && evt.changedTouches.length == 1) {
+            updateRaycaster(evt.changedTouches[0]);
+            draggedCardObj = null;
+            cardDragTouchId = null;
+            var cardObj = raycastCards();
+            if (cardObj) {
+                if (cardIsInHand(cardObj, handContainer)) {
+                    draggedCardObj = cardObj;
+                    cardDragTouchId = evt.changedTouches[0].identifier;
+                    /*var card = cardObj.children[0];
+                    flipCard(card);*/
+                }
+            }
+        }
+
+        return absorbEvent(evt);
+    }
+
+    function onTouchEnd(evt) {
+        console.log('touch end');
+        console.log(evt);
+        if (cardDragTouchId !== null) {
+            for (var i = 0; i < evt.changedTouches.length; i++) {
+                if (evt.changedTouches[i].identifier == cardDragTouchId) {
+                    draggedCardObj = null;
+                    cardDragTouchId = null;
+                    break;
+                }
+            }
+        }
+
+        return absorbEvent(evt);
+    }
+
+    function onTouchMove(evt) {
+        console.log('touch move');
+        console.log(evt);
+        if (cardDragTouchId !== null) {
+            for (var i = 0; i < evt.changedTouches.length; i++) {
+                if (evt.changedTouches[i].identifier == cardDragTouchId) {
+                    updateRaycaster(evt.changedTouches[i]);
+                    break;
+                }
+            }
+        }
+
+        return absorbEvent(evt);
     }
 
     function flipCard(card) {
@@ -450,7 +707,7 @@
         }
     }
 
-    function raycast(object) {
+    /*function raycast(object) {
         // calculate mouse position in normalized device coordinates
         // (-1 to +1) for both components
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -466,24 +723,63 @@
         } else {
             return false;
         }
+    }*/
+
+    function updateRaycaster(touch) {
+        var clientX, clientY;
+        if (touch) {
+            clientX = touch.clientX;
+            clientY = touch.clientY;
+        } else {
+            clientX = event.clientX;
+            clientY = event.clientY;
+        }
+
+        // calculate mouse position in normalized device coordinates
+        // (-1 to +1) for both components
+        mouse.x = (clientX / window.innerWidth) * 2 - 1;
+        mouse.y = - (clientY / window.innerHeight) * 2 + 1;
+
+        // update the picking ray with the camera and mouse position
+        raycaster.setFromCamera(mouse, camera);
     }
 
     function raycastCards() {
-        // calculate mouse position in normalized device coordinates
+        /*// calculate mouse position in normalized device coordinates
         // (-1 to +1) for both components
         mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
         mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
 
         // update the picking ray with the camera and mouse position
-        raycaster.setFromCamera(mouse, camera);
+        raycaster.setFromCamera(mouse, camera);*/
 
         // calculate objects intersecting the picking ray
-        var intersects = raycaster.intersectObjects(cards);
-        if (intersects.length > 0) {
-            return intersects[0].object;
+        var intersects = raycaster.intersectObjects(cards, true);
+        for (var i = 0; i < intersects.length; i++) {
+            if (intersects[i].object.name == "CardBody") {
+                return intersects[i].object.parent.parent;
+            }
+        }
+        /*if (intersects.length > 0) {
+            //console.log(intersects[0].object);
+            return intersects[0].object.parent.parent;
         } else {
             return null;
+        }*/
+    }
+
+    function remapValueInRange(v, a1, b1, a2, b2) {
+        return a2 + (v - a1) / (b1 - a1) * (b2 - a2);
+    }
+
+    function clamp(v, min, max) {
+        if (v < min) {
+            return min;
         }
+        if (v > max) {
+            return max;
+        }
+        return v;
     }
 
     function pointsHelper(pointsArray) {
