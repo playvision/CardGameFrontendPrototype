@@ -1,5 +1,5 @@
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 </head>
 
 <style>
@@ -77,8 +77,15 @@
     var cards = [];
     var cardObjs = [];
 
+    var deck = [];
+
+    var transferSlot;
+
     var cameraAttachment;
     var handContainer;
+
+    var draggedCardObj = null;
+    var cardDragTouchId = null;
 
     const colorDark = new THREE.Color(0xb0b0b0);
     const colorLight = new THREE.Color(0xffffff);
@@ -196,7 +203,7 @@
         addToHandClip = createAddToHandClip();
 
         // Cards
-        for (var x = -3; x <= 3; x++) {
+        /*for (var x = -3; x <= 3; x++) {
             for (var z = -3; z <= 3; z++) {
                 var card = initCard();
                 var group = new THREE.Group();
@@ -206,6 +213,36 @@
                 cards.push(card);
                 cardObjs.push(group);
             }
+        }*/
+
+        // Cards
+        for (var i = 0; i < 52; i++) {
+            var card = initCard();
+            var group = new THREE.Group();
+            group.add(card);
+            scene.add(group);
+            cards.push(card);
+            cardObjs.push(group);
+        }
+
+        // Transfer slot
+        initTransferSlot();
+
+        // Deck
+        var heightOfCardInDeck = 0.02;
+        var deckPos = new THREE.Vector3(-4.0, 0, -1.5);
+        var deckEuler = new THREE.Euler(
+            0,//Math.PI / 2,
+            0,//Math.PI,
+            Math.PI
+        );
+        var deckRot = new THREE.Quaternion();
+        deckRot.setFromEuler(deckEuler);
+        for (var i = 0; i < cardObjs.length; i++) {
+            deck.push(cardObjs[i]);
+            var cardPos = new THREE.Vector3(0, i * heightOfCardInDeck, 0);
+            cardPos.add(deckPos);
+            cardObjs[i].position.copy(cardPos);
         }
 
         // Camera attachment (container for camera-aligned objects)
@@ -218,12 +255,12 @@
         cameraAttachment.add(handContainer);
         handContainer.position.set(0, -1.5, -4);
 
-        /*addCardToHand(cardObjs[0], handContainer);
-        addCardToHand(cardObjs[1], handContainer);
-        addCardToHand(cardObjs[2], handContainer);
-        addCardToHand(cardObjs[3], handContainer);
-        addCardToHand(cardObjs[4], handContainer);
-        addCardToHand(cardObjs[5], handContainer);*/
+        // Create 6 table slots
+        for (var i = 0; i < 6; i++) {
+            tableSlots.push(
+                {bottom: null, top: null}
+            );
+        }
 
         // Ground
         initGround();
@@ -244,9 +281,63 @@
         return cardObj.parent == handContainer;
     }
 
-    var testCount = 0;
+    var tableSlots = [];
+
+    function getFreeTableSlotIndex() {
+        for (var i = 0; i < tableSlots.length; i++) {
+            if (tableSlots[i].bottom === null) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function getNumberOfOccupiedTableSlots() {
+        var i = getFreeTableSlotIndex();
+        if (i == -1) {
+            return tableSlots.length;
+        }
+        return i;
+    }
+
+    function tryPlaceCardOnTable(cardObj, slotIndex) {
+        if (slotIndex == -1) {
+            slotIndex = getFreeTableSlotIndex();
+        }
+        if (slotIndex == -1) {
+            // No free slots
+            return false;
+        }
+        var slot = tableSlots[slotIndex];
+        if (slot.bottom === null) {
+            slot.bottom = cardObj;
+        } else if (slot.top === null) {
+            slot.top = cardObj;
+        } else {
+            // The slot is occupied
+            return false;
+        }
+        scene.attach(cardObj);
+        return true;
+    }
+
+    function onCardDraggedOntoTable(cardObj) {
+        tryPlaceCardOnTable(cardObj, -1);
+    }
+
+    function onDraggedCardReleased() {
+        if (cardIsBeingDraggedOntoTable) {
+            onCardDraggedOntoTable(draggedCardObj);
+            cardIsBeingDraggedOntoTable = false;
+        }
+    }
+
+    //var testCount = 0;
     function addCard() {
-        addCardToHand(cardObjs[testCount++], handContainer);
+        var cardObj = deck.pop();
+        if (cardObj) {
+            addCardToHand(cardObj, handContainer);
+        }
     }
 
     function updateCameraAttachment() {
@@ -265,6 +356,59 @@
         delta = clock.getDelta();
         for (var i = 0; i < cards.length; i++) {
             cards[i].mixer.update(delta);
+        }
+
+        var transferSlotIsActive = true;
+
+        const tableSlotsPerRow = 3;
+        const offsetBetweenCols = 1.5;
+        const offsetBetweenRows = 2.1;
+        const centerPosition = new THREE.Vector3(0, 0, -1.5);
+        var numProperTableSlots = getNumberOfOccupiedTableSlots();
+        var numTableSlots = numProperTableSlots;
+        if (transferSlotIsActive) {
+            numTableSlots++;
+        }
+        var numRows = ~~(numTableSlots / tableSlotsPerRow) + ((numTableSlots % tableSlotsPerRow > 0) ? 1 : 0);
+        for (var i = 0; i < numTableSlots; i++) {
+            var slot = null;
+            
+            if (i <= numProperTableSlots - 1) {
+                slot = tableSlots[i];
+            }
+
+            var row = ~~(i / tableSlotsPerRow);
+            var col = i % tableSlotsPerRow;
+            var numColsInRow = (row < numRows - 1)
+                ? tableSlotsPerRow
+                : (numTableSlots % tableSlotsPerRow || tableSlotsPerRow);
+
+            var xOffset = -0.5 * offsetBetweenCols * (numColsInRow - 1);
+            var zOffset = -1 * offsetBetweenRows * (numRows - 1);
+
+            var targetPos = new THREE.Vector3(
+                xOffset + col * offsetBetweenCols,
+                0.01,
+                zOffset + row * offsetBetweenRows
+            );
+            targetPos.add(centerPosition);
+
+            var targetEuler = new THREE.Euler(
+                0,//Math.PI / 2,
+                0,//Math.PI,
+                Math.PI
+            );
+            var targetRot = new THREE.Quaternion();
+            targetRot.setFromEuler(targetEuler);
+
+            var lerpFactor = clamp(8.0 * delta, 0, 1);
+
+            if (slot) {
+                slot.bottom.position.lerp(targetPos, lerpFactor);
+                slot.bottom.quaternion.slerp(targetRot, lerpFactor);
+            } else {
+                transferSlot.position.lerp(targetPos, lerpFactor);
+            }
         }
 
         updateCameraAttachment();
@@ -314,8 +458,8 @@
                 targetPos.add(additionalFanOffset);
                 var targetEuler = new THREE.Euler(
                     Math.PI / 2,
-                    Math.PI + angle,
-                    0
+                    /*Math.PI*/ 0 + angle,
+                    Math.PI
                 );
                 var targetRot = new THREE.Quaternion();
                 targetRot.setFromEuler(targetEuler);
@@ -325,6 +469,8 @@
                     var verticalScreenRangeForLayingCardMax = 0.4 - 0.2 * additionalFanOffsetFactor;
                     var fanPlaneToTablePlaneBlendFactor = remapValueInRange(mouse.y, verticalScreenRangeForLayingCardMin, verticalScreenRangeForLayingCardMax, 0, 1);
                     fanPlaneToTablePlaneBlendFactor = clamp(fanPlaneToTablePlaneBlendFactor, 0, 1);
+
+                    cardIsBeingDraggedOntoTable = fanPlaneToTablePlaneBlendFactor > 0;
 
                     var handContainerInvMatrix = handContainer.matrixWorld.clone();
                     handContainerInvMatrix.invert();
@@ -350,8 +496,8 @@
 
                     var straightCardEuler = new THREE.Euler(
                         Math.PI / 2,
-                        Math.PI,
-                        0
+                        /*Math.PI*/ 0,
+                        Math.PI
                     );
                     var straightCardRot = new THREE.Quaternion();
                     straightCardRot.setFromEuler(straightCardEuler);
@@ -369,8 +515,8 @@
 
                     targetRot.slerp(hoveringCardRotation, fanPlaneToTablePlaneBlendFactor);
 
-                    var lerpFactor = 16.0 * delta;
-                    if (fanPlaneToTablePlaneBlendFactor > 0) {
+                    var lerpFactor = clamp(16.0 * delta, 0, 1);
+                    if (cardIsBeingDraggedOntoTable) {
                         lerpFactor = 1;
                     }
                     
@@ -381,7 +527,7 @@
                 }
                 else
                 {
-                    var lerpFactor = 8.0 * delta;
+                    var lerpFactor = clamp(8.0 * delta, 0, 1);
 
                     cardObj.position.lerp(targetPos, lerpFactor);
                     cardObj.quaternion.slerp(targetRot, lerpFactor);
@@ -405,7 +551,7 @@
         scene.add(dirLight, ambientLight);
     }
 
-    function createCardMesh() {
+    /*function createCardMesh() {
         var faceUpTexture = txtLoader.load('card_front.jpg');
         var faceDownTexture = txtLoader.load('card_back.webp');
         // faceUpTexture.flipY = false;
@@ -434,7 +580,7 @@
         cardMesh.scale.x = 0.65;
         //cardMesh.castShadow = true;
         return cardMesh;
-    }
+    }*/
 
     function initCard() {
         var card = cardMesh.clone();
@@ -459,6 +605,34 @@
         card.actions.addToHand.clampWhenFinished = true;
 
         return card;
+    }
+
+    function initTransferSlot() {
+        transferSlot = new THREE.Mesh(
+            new THREE.PlaneBufferGeometry(0.892 * 1.5, 1.313 * 1.5),
+            new THREE.MeshStandardMaterial({
+                map: txtLoader.load("card_slot_bg.png"),
+                metalness: 0,
+                roughness: 1
+            })
+        );
+        transferSlot.geometry.rotateX(-Math.PI * 0.5);
+
+        var transferIcon = new THREE.Mesh(
+            new THREE.PlaneBufferGeometry(0.4 * 1.5, 0.4 * 1.5),
+            new THREE.MeshStandardMaterial({
+                map: txtLoader.load("icon_transition_mode_white_shadow_black.png"),
+                metalness: 0,
+                roughness: 1
+            })
+        );
+        transferIcon.geometry.rotateX(-Math.PI * 0.5);
+        transferIcon.position.set(0, 0.01, 0);
+
+        transferSlot.add(transferIcon);
+
+        //ground.receiveShadow = true;
+        scene.add(transferSlot);
     }
 
     function initGround() {
@@ -542,7 +716,7 @@
     function createAddToHandClip() {
         var posArrFlat = [
             0, 0, 0,
-            0, 0, 2.5,
+            0, 0, -2.5,
             0, 0, 0
         ];
 
@@ -575,7 +749,7 @@
     }
 
     function onMouseMove(evt) {
-        if (cardDragTouchId === 0) {
+        if (cardDragTouchId === null) {
             updateRaycaster();
         }
 
@@ -601,9 +775,6 @@
         return absorbEvent(evt);
     }
 
-    var draggedCardObj = null;
-    var cardDragTouchId = null;
-
     function onMouseDown(evt) {
         console.log('down fired');
         console.log(evt);
@@ -616,7 +787,7 @@
         if (cardObj) {
             if (cardIsInHand(cardObj, handContainer)) {
                 draggedCardObj = cardObj;
-                
+                cardIsBeingDraggedOntoTable = false;
                 /*var card = cardObj.children[0];
                 flipCard(card);*/
             }
@@ -629,8 +800,12 @@
     function onMouseUp(evt) {
         console.log('up fired');
         console.log(evt);
-        draggedCardObj = null;
-        cardDragTouchId = null;
+
+        if (draggedCardObj !== null && cardDragTouchId === null) {
+            onDraggedCardReleased();
+            draggedCardObj = null;
+            cardDragTouchId = null;
+        }
 
         return absorbEvent(evt);
     }
@@ -648,6 +823,7 @@
                 if (cardIsInHand(cardObj, handContainer)) {
                     draggedCardObj = cardObj;
                     cardDragTouchId = evt.changedTouches[0].identifier;
+                    cardIsBeingDraggedOntoTable = false;
                     /*var card = cardObj.children[0];
                     flipCard(card);*/
                 }
@@ -663,6 +839,7 @@
         if (cardDragTouchId !== null) {
             for (var i = 0; i < evt.changedTouches.length; i++) {
                 if (evt.changedTouches[i].identifier == cardDragTouchId) {
+                    onDraggedCardReleased();
                     draggedCardObj = null;
                     cardDragTouchId = null;
                     break;
