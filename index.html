@@ -60,6 +60,68 @@
 <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
 <script src="Stats.js"></script>
 
+<script type="x-shader/x-vertex" id="nineSliceVertShader">
+    attribute vec3 position;
+    attribute vec2 uv;
+    
+    uniform mat4 modelViewMatrix;
+    uniform mat4 projectionMatrix;
+
+    uniform mediump vec2 scale;
+    
+    varying vec2 v_uv;
+    varying vec2 v_pos;
+    
+    void main() {
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    
+      v_uv = uv;
+      v_pos = (position.xy + 0.5) * scale;
+    }
+</script>
+
+<script type="x-shader/x-fragment" id="nineSliceFragShader">
+    precision mediump float;
+
+    varying vec2 v_uv;
+    varying vec2 v_pos;
+    
+    uniform vec2 scale;
+
+    uniform sampler2D map;
+    
+    float remapValueInRange(float v, float a1, float b1, float a2, float b2) {
+        return a2 + (v - a1) / (b1 - a1) * (b2 - a2);
+    }
+
+    void main() {
+      vec2 uv = v_uv;
+      
+      float lEdge = 0.5;
+      float rEdge = scale.x - 0.5;
+      float bEdge = 0.5;
+      float tEdge = scale.y - 0.5;
+    
+      if (v_pos.x < lEdge) {
+        uv.x = v_pos.x;
+      } else if(v_pos.x > rEdge) {
+        uv.x = 1.0 - (scale.x - v_pos.x);
+      } else {
+        uv.x = remapValueInRange(v_pos.x, lEdge, rEdge, lEdge, 1.0 - (scale.x - rEdge));
+      }
+
+      if (v_pos.y < bEdge) {
+        uv.y = v_pos.y;
+      } else if(v_pos.y > tEdge) {
+        uv.y = 1.0 - (scale.y - v_pos.y);
+      } else {
+        uv.y = remapValueInRange(v_pos.y, bEdge, tEdge, bEdge, 1.0 - (scale.y - tEdge));
+      }
+
+      gl_FragColor = texture2D(map, uv);
+    }
+</script>
+
 <script>
     const gltfLoader = new THREE.GLTFLoader();
 
@@ -608,22 +670,38 @@
     }
 
     function initTransferSlot() {
-        transferSlot = new THREE.Mesh(
-            new THREE.PlaneBufferGeometry(0.892 * 1.5, 1.313 * 1.5),
-            new THREE.MeshStandardMaterial({
-                map: txtLoader.load("card_slot_bg.png"),
-                metalness: 0,
-                roughness: 1
+        const sizeX = 0.892;
+        const sizeY = 1.313;
+        const planeScale = 1.56;
+        const spriteScale = 3;
+        const iconSize = 0.75;
+
+        transferSlot = new THREE.Group();
+
+        var transferSlotPlane = new THREE.Mesh(
+            new THREE.PlaneBufferGeometry(1, 1),
+            new THREE.RawShaderMaterial({
+                uniforms: {
+                    map       : { value: txtLoader.load("card_slot_bg.png") },
+                    scale     : { value: new THREE.Vector2(spriteScale, spriteScale * sizeY / sizeX) }
+                },
+                vertexShader: document.getElementById('nineSliceVertShader').textContent,
+                fragmentShader: document.getElementById('nineSliceFragShader').textContent,
+                transparent: true
             })
         );
-        transferSlot.geometry.rotateX(-Math.PI * 0.5);
+
+        transferSlotPlane.rotation.set(-Math.PI * 0.5, 0, 0);
+        transferSlotPlane.scale.set(sizeX * planeScale, sizeY * planeScale, 1);
+        transferSlot.add(transferSlotPlane);
 
         var transferIcon = new THREE.Mesh(
-            new THREE.PlaneBufferGeometry(0.4 * 1.5, 0.4 * 1.5),
+            new THREE.PlaneBufferGeometry(iconSize, iconSize),
             new THREE.MeshStandardMaterial({
                 map: txtLoader.load("icon_transition_mode_white_shadow_black.png"),
                 metalness: 0,
-                roughness: 1
+                roughness: 1,
+                transparent: true
             })
         );
         transferIcon.geometry.rotateX(-Math.PI * 0.5);
