@@ -60,6 +60,52 @@
 <script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
 <script src="Stats.js"></script>
 
+<script type="x-shader/x-vertex" id="atlasQuadVertShader">
+    attribute vec3 position;
+    attribute vec2 uv;
+    
+    uniform mat4 modelViewMatrix;
+    uniform mat4 projectionMatrix;
+
+    uniform mediump vec2 leftBottom;
+    uniform mediump vec2 rightTop;
+    
+    varying vec2 v_uv;
+    
+    void main() {
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    
+      v_uv = vec2(uv.x, 1.0 - uv.y);
+      v_uv = mix(leftBottom, rightTop, v_uv);
+    }
+</script>
+
+<script type="x-shader/x-fragment" id="atlasQuadFragShader">
+    precision mediump float;
+
+    varying vec2 v_uv;
+
+    uniform sampler2D map;
+    uniform vec2 innerLeftBottom;
+    uniform vec2 innerRightTop;
+    uniform vec4 color;
+
+    void main() {
+      vec2 uv = clamp(v_uv, innerLeftBottom, innerRightTop);
+
+      //uv.x = clamp(v_uv.x, innerLeftBottom.x, innerRightTop.x);
+      //uv.y = clamp(v_uv.y, innerLeftBottom.y, innerRightTop.y);
+
+      if (uv == v_uv) {
+        uv.y = 1.0 - uv.y;
+        gl_FragColor = texture2D(map, uv, 0.0) * color;
+      } else {
+        uv.y = 1.0 - uv.y;
+        gl_FragColor = texture2D(map, uv, -1.0) * color;
+      }
+    }
+</script>
+
 <script type="x-shader/x-vertex" id="nineSliceVertShader">
     attribute vec3 position;
     attribute vec2 uv;
@@ -125,6 +171,72 @@
 <script>
     const gltfLoader = new THREE.GLTFLoader();
 
+    var atlases = [];
+
+    function loadAtlas(imageFileName, infoFileName) {
+        var tex;
+        return loadTexture(imageFileName).then(
+            (texture) => {
+                tex = texture;
+                return fetch(infoFileName);
+            }
+        ).then(
+            (response) => response.json()
+        ).then((obj) => {
+            //var obj = response.json();
+            //var tex = txtLoader.load(imageFileName);
+            tex.wrapS = THREE.RepeatWrapping;
+            tex.wrapT = THREE.RepeatWrapping;
+            obj.tex = tex;
+            atlases.push(obj);
+        });
+    }
+
+    function findQuadInAtlas(name) {
+        for (var i = 0; i < atlases.length; i++) {
+            var obj = atlases[i]['frames'][name];
+            if (obj) {
+                return {obj: obj, tex: atlases[i].tex};
+            }
+        }
+        return null;
+    }
+
+    function getAtlasQuadInfo(name) {
+        var atlasQuadMargin = 4;
+        var facePlaneAtlasQuad = findQuadInAtlas(name);
+        if (facePlaneAtlasQuad == null) {
+            return null;
+        }
+        var facePlaneAtlasQuadRect = facePlaneAtlasQuad.obj["frame"];
+        var facePlaneAtlasQuadSourceRect = facePlaneAtlasQuad.obj["spriteSourceSize"];
+        var facePlaneAtlasQuadSourceSize = facePlaneAtlasQuad.obj["sourceSize"];
+        var atlasImage = facePlaneAtlasQuad.tex.image;
+        var innerRect = {
+            left: (facePlaneAtlasQuadRect['x'] - atlasQuadMargin) / atlasImage.width,
+            right: (facePlaneAtlasQuadRect['x'] + facePlaneAtlasQuadRect['w'] + atlasQuadMargin) / atlasImage.width,
+            bottom: (facePlaneAtlasQuadRect['y'] - atlasQuadMargin) / atlasImage.height,
+            top: (facePlaneAtlasQuadRect['y'] + facePlaneAtlasQuadRect['h'] + atlasQuadMargin) / atlasImage.height
+        };
+        var outerRect = {
+            left: innerRect.left - facePlaneAtlasQuadSourceRect['x'] / atlasImage.width,
+            bottom: innerRect.bottom - facePlaneAtlasQuadSourceRect['y'] / atlasImage.height
+        };
+        outerRect.right = outerRect.left + (facePlaneAtlasQuadSourceSize['w'] + 2 * atlasQuadMargin) / atlasImage.width;
+        outerRect.top = outerRect.bottom + (facePlaneAtlasQuadSourceSize['h'] + 2 * atlasQuadMargin) / atlasImage.height;
+        return {
+            tex: facePlaneAtlasQuad.tex,
+            innerRect: innerRect,
+            outerRect: outerRect
+        };
+    }
+
+    function loadTexture(url) {
+        return new Promise(resolve => {
+            txtLoader.load(url, resolve)
+        });
+    }
+
     var stats;
 
     // Global Variables
@@ -132,6 +244,8 @@
     var controls, raycaster, mouse, txtLoader, clock, delta = 0;
     var cardMesh;
     var /*card,*/ ground;
+
+    txtLoader = new THREE.TextureLoader();
     
     // animation clips
     var flipUpsideClip, flipDownsideClip, addToHandClip;
@@ -163,38 +277,63 @@
 
     function start() {
         document.querySelector('#options').style.display = 'none';
-        gltfLoader.load(
+
+        Promise.all([
+            loadAtlas("Atlas2/texture-0.png", "Atlas2/texture-0.json"),
+            loadAtlas("Atlas2/texture-1.png", "Atlas2/texture-1.json"),
+            loadAtlas("Atlas2/texture-2.png", "Atlas2/texture-2.json")
+        ]).then(() => gltfLoader.load(
             'card.glb',
             function (gltf) {
-                // gltf.scene.traverse(function (child) {
-                //     if ((child as THREE.Mesh).isMesh) {
-                //         const m = (child as THREE.Mesh)
-                //         m.receiveShadow = true
-                //         m.castShadow = true
-                //     }
-                //     if (((child as THREE.Light)).isLight) {
-                //         const l = (child as THREE.Light)
-                //         l.castShadow = true
-                //         l.shadow.bias = -.003
-                //         l.shadow.mapSize.width = 2048
-                //         l.shadow.mapSize.height = 2048
-                //     }
-                // })
-                //scene.add(gltf.scene)
-                
-                /*var cardBody = gltf.scene;
-                cardBody.name = "CardBody";
-                cardBody.scale.set(0.004, 0.004, 0.004);
-                cardBody.rotation.set(90 * Math.PI / 180, 0, 0);
-
-                cardMesh = new THREE.Group();
-                cardMesh.name = "Card";
-                cardMesh.add(cardBody);*/
-
                 var cardBody = gltf.scene.children[0];
                 cardBody.name = "CardBody";
                 cardBody.scale.set(0.004, 0.004, 0.004);
                 cardBody.rotation.set(0, 0, 0);
+
+                var facePlaneGeometry = new THREE.PlaneBufferGeometry(1, 1);
+                var facePlaneMaterial = new THREE.RawShaderMaterial({
+                    uniforms: {
+                        color           : { value: new THREE.Vector4() },
+                        map             : { value: null/*facePlaneAtlasQuad.tex*/ },
+                        leftBottom      : { value: new THREE.Vector2(0, 0/*outerRect.left, outerRect.bottom*/) },
+                        rightTop        : { value: new THREE.Vector2(0, 0/*outerRect.right, outerRect.top*/) },
+                        innerLeftBottom : { value: new THREE.Vector2(0, 0/*innerRect.left, innerRect.bottom*/) },
+                        innerRightTop   : { value: new THREE.Vector2(0, 0/*innerRect.right, innerRect.top*/) }
+                    },
+                    vertexShader: document.getElementById('atlasQuadVertShader').textContent,
+                    fragmentShader: document.getElementById('atlasQuadFragShader').textContent,
+                    transparent: true
+                });
+
+                var facePlane = new THREE.Mesh(
+                    facePlaneGeometry,
+                    facePlaneMaterial
+                );
+                facePlane.rotation.set(Math.PI * 0.5, 0, 0);
+                facePlane.scale.set(0.9, 1.5, 1);
+                facePlane.position.set(0, -0.01, 0);
+                facePlane.name = "FacePlane";
+                gltf.scene.add(facePlane);
+
+                var signPlane = new THREE.Mesh(
+                    facePlaneGeometry,
+                    facePlaneMaterial
+                );
+                signPlane.rotation.set(Math.PI * 0.5, 0, 0);
+                signPlane.scale.set(0.4, 0.4, 1);
+                signPlane.position.set(-0.5, -0.01, 0.8);
+                signPlane.name = "SignPlane";
+                gltf.scene.add(signPlane);
+
+                var signPlane2 = new THREE.Mesh(
+                    facePlaneGeometry,
+                    facePlaneMaterial
+                );
+                signPlane2.rotation.set(Math.PI * 0.5, 0, Math.PI);
+                signPlane2.scale.set(0.4, 0.4, 1);
+                signPlane2.position.set(0.5, -0.01, -0.8);
+                signPlane2.name = "SignPlane2";
+                gltf.scene.add(signPlane2);
 
                 cardMesh = gltf.scene;
                 cardMesh.name = "Card";
@@ -213,7 +352,22 @@
             (error) => {
                 console.log(error)
             }
-        );
+        ));
+    }
+
+    function setCardFace(card, planeName, name, color) {
+        var uniforms = card.getObjectByName(planeName).material.uniforms;
+        var atlasQuadInfo = getAtlasQuadInfo(name);
+        if (atlasQuadInfo != null) {
+            uniforms.color.value = color;
+            uniforms.map.value = atlasQuadInfo.tex;
+            uniforms.leftBottom.value = new THREE.Vector2(atlasQuadInfo.outerRect.left, atlasQuadInfo.outerRect.bottom);
+            uniforms.rightTop.value = new THREE.Vector2(atlasQuadInfo.outerRect.right, atlasQuadInfo.outerRect.top);
+            uniforms.innerLeftBottom.value = new THREE.Vector2(atlasQuadInfo.innerRect.left, atlasQuadInfo.innerRect.bottom);
+            uniforms.innerRightTop.value = new THREE.Vector2(atlasQuadInfo.innerRect.right, atlasQuadInfo.innerRect.top);
+        } else {
+            uniforms.map.value = null;
+        }
     }
 
     function init(flags) {
@@ -251,7 +405,7 @@
 
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
-        txtLoader = new THREE.TextureLoader();
+        //txtLoader = new THREE.TextureLoader();
         clock = new THREE.Clock();
 
         // Lights
@@ -394,10 +548,62 @@
         }
     }
 
+    var locale = "ru";
+
+    var cardSignLocalizations = {
+        "ace":   () => (locale == "ru") ? "_ru" : "_de_en",
+        "jack":  () => (locale == "en") ? "_en" : "_de_ru",
+        "king":  () => "_de_en_ru",
+        "queen": () => "_" + locale
+    };
+
+    function setCardIdentity(card, value, suit) {
+        var signColor;
+        if (suit == "diamonds" || suit == "hearts") {
+            signColor = new THREE.Vector4(0.8, 0, 0, 1);
+        } else {
+            signColor = new THREE.Vector4(0, 0, 0, 1);
+        }
+
+        var pictureColor;
+        if (value == "jack" || value == "king" || value == "queen") {
+            pictureColor = new THREE.Vector4(1, 1, 1, 1);
+        } else {
+            pictureColor = signColor;
+        }
+
+        // Example: hearts_queen
+        setCardFace(card, "FacePlane", suit + "_" + value, pictureColor);
+
+        // Example: card_sign_king_white_de_en_ru
+        var signLocalizedIdFn = cardSignLocalizations[value];
+        var signFullId = "card_sign_" + value + "_white" + (signLocalizedIdFn ? signLocalizedIdFn() : "");
+        setCardFace(card, "SignPlane", signFullId, signColor); 
+    }
+
+    function randomInt(n) {
+        return Math.floor(Math.random() * n);
+    }
+
+    // test
+    function getRandomCardIdentity() {
+        var suits = ["clubs", "diamonds", "hearts", "spades"];
+        var values = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "jack", "queen", "king", "ace"];  
+        return {
+            suit: suits[randomInt(suits.length)],
+            value: values[randomInt(values.length)]
+        };
+    }
+    
     //var testCount = 0;
     function addCard() {
         var cardObj = deck.pop();
         if (cardObj) {
+            var card = cardObj.children[0];
+            
+            var identity = getRandomCardIdentity();
+            setCardIdentity(card, identity.value, identity.suit);
+
             addCardToHand(cardObj, handContainer);
         }
     }
@@ -646,6 +852,14 @@
 
     function initCard() {
         var card = cardMesh.clone();
+
+        var facePlane = card.getObjectByName("FacePlane");
+        facePlane.material = facePlane.material.clone();
+
+        var signPlane = card.getObjectByName("SignPlane");
+        var signPlane2 = card.getObjectByName("SignPlane2");
+        signPlane.material = signPlane.material.clone();
+        signPlane2.material = signPlane.material;
 
         //scene.add(card);
 

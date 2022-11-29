@@ -1,0 +1,555 @@
+{
+  "frames": {
+    "clubs_king": {
+      "frame": {
+        "x": 4,
+        "y": 4,
+        "w": 510,
+        "h": 884
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 1,
+        "w": 510,
+        "h": 884
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "diamonds_king": {
+      "frame": {
+        "x": 4,
+        "y": 896,
+        "w": 510,
+        "h": 845
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 20,
+        "w": 510,
+        "h": 845
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "card_sign_queen_white_en": {
+      "frame": {
+        "x": 4,
+        "y": 1749,
+        "w": 92,
+        "h": 176
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 83,
+        "y": 50,
+        "w": 92,
+        "h": 176
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_queen_white_ru": {
+      "frame": {
+        "x": 104,
+        "y": 1749,
+        "w": 124,
+        "h": 175
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 66,
+        "y": 51,
+        "w": 124,
+        "h": 175
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_jack_white_en": {
+      "frame": {
+        "x": 236,
+        "y": 1749,
+        "w": 51,
+        "h": 163
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 102,
+        "y": 51,
+        "w": 51,
+        "h": 163
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_10_white": {
+      "frame": {
+        "x": 295,
+        "y": 1749,
+        "w": 147,
+        "h": 161
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 55,
+        "y": 50,
+        "w": 147,
+        "h": 161
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_3_white": {
+      "frame": {
+        "x": 450,
+        "y": 1749,
+        "w": 84,
+        "h": 161
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 89,
+        "y": 50,
+        "w": 84,
+        "h": 161
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "hearts_jack": {
+      "frame": {
+        "x": 522,
+        "y": 4,
+        "w": 510,
+        "h": 840
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 23,
+        "w": 510,
+        "h": 840
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "spades_king": {
+      "frame": {
+        "x": 522,
+        "y": 852,
+        "w": 509,
+        "h": 835
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 25,
+        "w": 509,
+        "h": 835
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "diamonds_ace": {
+      "frame": {
+        "x": 542,
+        "y": 1695,
+        "w": 299,
+        "h": 300
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 106,
+        "y": 292,
+        "w": 299,
+        "h": 300
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "clubs_ace": {
+      "frame": {
+        "x": 849,
+        "y": 1695,
+        "w": 297,
+        "h": 300
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 108,
+        "y": 292,
+        "w": 297,
+        "h": 300
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "diamonds_jack": {
+      "frame": {
+        "x": 1039,
+        "y": 852,
+        "w": 509,
+        "h": 834
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 27,
+        "w": 509,
+        "h": 834
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "hearts_king": {
+      "frame": {
+        "x": 1154,
+        "y": 4,
+        "w": 510,
+        "h": 831
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 27,
+        "w": 510,
+        "h": 831
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "card_sign_ace_white_de_en": {
+      "frame": {
+        "x": 1040,
+        "y": 4,
+        "w": 96,
+        "h": 159
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 80,
+        "y": 51,
+        "w": 96,
+        "h": 159
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_jack_white_de_ru": {
+      "frame": {
+        "x": 1040,
+        "y": 171,
+        "w": 92,
+        "h": 159
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 83,
+        "y": 51,
+        "w": 92,
+        "h": 159
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_king_white_de_en_ru": {
+      "frame": {
+        "x": 1040,
+        "y": 338,
+        "w": 92,
+        "h": 159
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 83,
+        "y": 51,
+        "w": 92,
+        "h": 159
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_4_white": {
+      "frame": {
+        "x": 1040,
+        "y": 505,
+        "w": 90,
+        "h": 159
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 83,
+        "y": 51,
+        "w": 90,
+        "h": 159
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_6_white": {
+      "frame": {
+        "x": 1040,
+        "y": 672,
+        "w": 84,
+        "h": 161
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 89,
+        "y": 50,
+        "w": 84,
+        "h": 161
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "hearts_ace": {
+      "frame": {
+        "x": 1154,
+        "y": 1694,
+        "w": 298,
+        "h": 299
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 108,
+        "y": 292,
+        "w": 298,
+        "h": 299
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "spades_ace": {
+      "frame": {
+        "x": 1460,
+        "y": 1694,
+        "w": 298,
+        "h": 298
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 107,
+        "y": 293,
+        "w": 298,
+        "h": 298
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "diamonds_10": {
+      "frame": {
+        "x": 1672,
+        "y": 4,
+        "w": 306,
+        "h": 720
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 104,
+        "y": 83,
+        "w": 306,
+        "h": 720
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "diamonds_7": {
+      "frame": {
+        "x": 1672,
+        "y": 732,
+        "w": 306,
+        "h": 720
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 104,
+        "y": 83,
+        "w": 306,
+        "h": 720
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "card_sign_queen_white_de": {
+      "frame": {
+        "x": 1556,
+        "y": 843,
+        "w": 89,
+        "h": 159
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 83,
+        "y": 51,
+        "w": 89,
+        "h": 159
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_8_white": {
+      "frame": {
+        "x": 1556,
+        "y": 1010,
+        "w": 84,
+        "h": 161
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 86,
+        "y": 50,
+        "w": 84,
+        "h": 161
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_9_white": {
+      "frame": {
+        "x": 1556,
+        "y": 1179,
+        "w": 84,
+        "h": 161
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 87,
+        "y": 50,
+        "w": 84,
+        "h": 161
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_2_white": {
+      "frame": {
+        "x": 1556,
+        "y": 1348,
+        "w": 84,
+        "h": 160
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 90,
+        "y": 50,
+        "w": 84,
+        "h": 160
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_5_white": {
+      "frame": {
+        "x": 1556,
+        "y": 1516,
+        "w": 83,
+        "h": 160
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 87,
+        "y": 51,
+        "w": 83,
+        "h": 160
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_ace_white_ru": {
+      "frame": {
+        "x": 1647,
+        "y": 1516,
+        "w": 80,
+        "h": 159
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 89,
+        "y": 51,
+        "w": 80,
+        "h": 159
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    },
+    "card_sign_7_white": {
+      "frame": {
+        "x": 1735,
+        "y": 1516,
+        "w": 70,
+        "h": 159
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 93,
+        "y": 51,
+        "w": 70,
+        "h": 159
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      }
+    }
+  }
+}

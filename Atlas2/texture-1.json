@@ -1,0 +1,156 @@
+{
+  "frames": {
+    "clubs_jack": {
+      "frame": {
+        "x": 4,
+        "y": 4,
+        "w": 510,
+        "h": 827
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 30,
+        "w": 510,
+        "h": 827
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "diamonds_queen": {
+      "frame": {
+        "x": 4,
+        "y": 839,
+        "w": 510,
+        "h": 826
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 30,
+        "w": 510,
+        "h": 826
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "hearts_queen": {
+      "frame": {
+        "x": 522,
+        "y": 4,
+        "w": 510,
+        "h": 802
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 42,
+        "w": 510,
+        "h": 802
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "spades_queen": {
+      "frame": {
+        "x": 522,
+        "y": 814,
+        "w": 509,
+        "h": 800
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 43,
+        "w": 509,
+        "h": 800
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "spades_jack": {
+      "frame": {
+        "x": 1039,
+        "y": 814,
+        "w": 510,
+        "h": 786
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 50,
+        "w": 510,
+        "h": 786
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "clubs_queen": {
+      "frame": {
+        "x": 1040,
+        "y": 4,
+        "w": 509,
+        "h": 775
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 55,
+        "w": 509,
+        "h": 775
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "diamonds_8": {
+      "frame": {
+        "x": 1557,
+        "y": 4,
+        "w": 306,
+        "h": 720
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 104,
+        "y": 83,
+        "w": 306,
+        "h": 720
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    },
+    "diamonds_9": {
+      "frame": {
+        "x": 1557,
+        "y": 732,
+        "w": 306,
+        "h": 720
+      },
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 104,
+        "y": 83,
+        "w": 306,
+        "h": 720
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 886
+      }
+    }
+  }
+}
