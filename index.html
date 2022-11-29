@@ -93,16 +93,13 @@
     void main() {
       vec2 uv = clamp(v_uv, innerLeftBottom, innerRightTop);
 
-      //uv.x = clamp(v_uv.x, innerLeftBottom.x, innerRightTop.x);
-      //uv.y = clamp(v_uv.y, innerLeftBottom.y, innerRightTop.y);
-
-      if (uv == v_uv) {
-        uv.y = 1.0 - uv.y;
-        gl_FragColor = texture2D(map, uv, 0.0) * color;
-      } else {
-        uv.y = 1.0 - uv.y;
-        gl_FragColor = texture2D(map, uv, -1.0) * color;
+      float lodBias = 0.0;
+      if (uv != v_uv) {
+        lodBias = -100.0;
       }
+
+      uv.y = 1.0 - uv.y;
+      gl_FragColor = texture2D(map, uv, lodBias) * color;
     }
 </script>
 
@@ -302,7 +299,8 @@
                     },
                     vertexShader: document.getElementById('atlasQuadVertShader').textContent,
                     fragmentShader: document.getElementById('atlasQuadFragShader').textContent,
-                    transparent: true
+                    transparent: true,
+                    depthWrite: false
                 });
 
                 var facePlane = new THREE.Mesh(
