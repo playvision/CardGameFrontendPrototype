@@ -550,6 +550,82 @@
         "w": 256,
         "h": 256
       }
+    },
+    "icon_clubs_white": {
+      "frame": {
+        "x": 1813,
+        "y": 1516,
+        "w": 128,
+        "h": 128
+      },
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "icon_diamonds_white": {
+      "frame": {
+        "x": 1813,
+        "y": 1652,
+        "w": 128,
+        "h": 128
+      },
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "icon_hearts_white": {
+      "frame": {
+        "x": 1766,
+        "y": 1788,
+        "w": 128,
+        "h": 128
+      },
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
+    },
+    "icon_spades_white": {
+      "frame": {
+        "x": 1902,
+        "y": 1788,
+        "w": 128,
+        "h": 128
+      },
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      }
     }
   }
 }
