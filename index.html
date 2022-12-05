@@ -52,10 +52,13 @@
 
 <!--<button id="flipAllBtn" class="testBtn">Flip All</button>-->
 <div id="testBtnContainer">
+    <button id="testBtn7" class="testBtn">6x6</button><br/>
     <button id="testBtn" class="testBtn">Draw</button><br/>
     <button id="testBtn2" class="testBtn">Draw (O1)</button><br/>
     <button id="testBtn3" class="testBtn">Draw (O2)</button><br/>
     <button id="testBtn4" class="testBtn">Draw (O3)</button><br/>
+    <button id="testBtn5" class="testBtn">Draw (O4)</button><br/>
+    <button id="testBtn6" class="testBtn">Draw (O5)</button><br/>
 </div>
 
 <div id="options">
@@ -503,7 +506,7 @@
         handContainer.position.set(0, -1.5, -4);
 
         // Other players' hand containers
-        var numberOfOpponents = 3;
+        var numberOfOpponents = 5;
         var xOffset = 4.0;
         for (var i = 0; i < numberOfOpponents; i++) {
             opponentHandContainer = new THREE.Group();
@@ -532,6 +535,9 @@
         document.querySelector('#testBtn2').onclick = () => addCard(1);
         document.querySelector('#testBtn3').onclick = () => addCard(2);
         document.querySelector('#testBtn4').onclick = () => addCard(3);
+        document.querySelector('#testBtn5').onclick = () => addCard(4);
+        document.querySelector('#testBtn6').onclick = () => addCard(5);
+        document.querySelector('#testBtn7').onclick = () => add6x6(3);
     }
 
     function addCardToHand(cardObj, handContainer) {
@@ -656,6 +662,14 @@
 
             var hc = playerId == 0 ? handContainer : opponents[playerId-1].handContainer;
             addCardToHand(cardObj, hc);
+        }
+    }
+
+    function add6x6() {
+        for (var i = 0; i < 6; i++) {
+            for (var j = 0; j < 6; j++) {
+                addCard(i);
+            }
         }
     }
 
